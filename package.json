@@ -12,6 +12,7 @@
     "url": "https://github.com/valtech-sd/coronado-bridge.git"
   },
   "scripts": {
+    "prepare": "rimraf ./build && tsc",
     "build": "rm -rf dist && tsc",
     "test": "mocha -r ts-node/register ./tests/unit/*.test.ts"
   },
