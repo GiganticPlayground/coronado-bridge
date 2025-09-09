@@ -1,4 +1,5 @@
 import express, { Request, Response, NextFunction } from 'express';
+import { Server } from 'http';
 import timeout from 'connect-timeout';
 import cors from 'cors';
 import { ILogger } from './types';
@@ -13,7 +14,7 @@ class CoronadoBridge {
   private outboundProvider: IOutboundProvider;
   private config: IBridgeConfig;
   private logger?: ILogger;
-  private servers: Array<any>;
+  private servers: Array<Server>;
   private corsOptions?: object;
   private requestTimeoutMs?: number;
 
@@ -190,10 +191,14 @@ class CoronadoBridge {
     this.logger?.info(`CoronadoBridge - setupExpress - setup complete`);
   }
 
-  close() {
+  close(closedCb?: () => any) {
+    let remaining = this.servers.length;
     this.servers.forEach((server, index) => {
       server.close(() => {
         this.logger?.info(`CoronadoBridge - Closed server ${index}`);
+        // Call closedCb on the last one
+        remaining--;
+        if (remaining === 0 && closedCb) closedCb();
       });
     });
   }
