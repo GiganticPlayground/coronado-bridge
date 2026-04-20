@@ -1,6 +1,6 @@
 import 'mocha';
 import chai, { expect } from 'chai';
-import chaiHttp from 'chai-http';
+import chaiHttp, { request as chaiRequest } from 'chai-http';
 import express from 'express';
 
 import CoronadoBridge, {
@@ -287,7 +287,6 @@ describe('HTTP Bridge', function () {
         'content-length': JSON.stringify(body).length.toString(),
         'content-type': 'application/json',
         host: 'localhost:3000',
-        'user-agent': 'node-superagent/3.8.3',
       };
       // Check to ensure what we passed to the Outbound Provider is correct
       // Note we're reaching into the outboundProvider instance, which is not
@@ -346,7 +345,6 @@ describe('HTTP Bridge', function () {
         'content-length': `${body.length}`,
         'content-type': 'text/plain',
         host: 'localhost:3000',
-        'user-agent': 'node-superagent/3.8.3',
       };
       // Check to ensure what we passed to the Outbound Provider is correct
       // Note we're reaching into the outboundProvider instance, which is not
@@ -620,8 +618,8 @@ describe('HTTP Bridge', function () {
       query: {},
     }
   ): Promise<any> {
-    return chai
-      .request(`http://localhost:${port}`)
+    return chaiRequest
+      .execute(`http://localhost:${port}`)
       .post(path)
       .query(query)
       .type('application/json')
@@ -644,8 +642,8 @@ describe('HTTP Bridge', function () {
       query: {},
     }
   ): Promise<any> {
-    return chai
-      .request(`http://localhost:${port}`)
+    return chaiRequest
+      .execute(`http://localhost:${port}`)
       .post(path)
       .query(query)
       .type('text/plain')
@@ -669,8 +667,8 @@ describe('HTTP Bridge', function () {
     }
   ): Promise<any> {
     return (
-      chai
-        .request(`http://localhost:${port}`)
+      chaiRequest
+        .execute(`http://localhost:${port}`)
         // Note this makes an OPTIONS instead of POST|GET
         .options(path)
         .query(query)
