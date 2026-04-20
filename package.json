@@ -14,7 +14,7 @@
   "scripts": {
     "prepare": "rimraf ./build && tsc",
     "build": "rm -rf dist && tsc",
-    "test": "mocha -r ts-node/register ./tests/unit/*.test.ts"
+    "test": "mocha"
   },
   "author": "Shane Mckenna",
   "license": "MIT",
@@ -34,13 +34,11 @@
     "chai": "^4.3.4",
     "chai-http": "^5.1.2",
     "log4js": "^6.7.0",
-    "mocha": "^11.7.5",
+    "mocha": "^7.2.0",
     "prettier": "^2.3.2",
     "rimraf": "^6.0.1",
-    "semantic-release": "^25.0.3",
-    "ts-node": "^10.2.1",
-    "tsx": "^4.21.0",
     "tslog": "^3.3.4",
+    "tsx": "^4.21.0",
     "typescript": "^4.3.5"
   },
   "publishConfig": {
