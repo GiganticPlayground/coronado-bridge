@@ -112,6 +112,10 @@ class CoronadoBridge {
           this.outboundProvider
             .handler(providerReq)
             .then((handlerResponse) => {
+              if (res.headersSent) {
+                this.logger?.error(`CoronadoBridge - handler resolved after response already sent (possible timeout); discarding response`);
+                return;
+              }
               this.logger?.info(`CoronadoBridge - handler processed message`); // Inspect the received handlerResponse to see if we have the structured class
               // OutboundResponse. If we do, we treat that special.
               if (handlerResponse instanceof OutboundResponse) {
@@ -144,6 +148,10 @@ class CoronadoBridge {
               }
             })
             .catch((error) => {
+              if (res.headersSent) {
+                this.logger?.error(`CoronadoBridge - handler rejected after response already sent (possible timeout); discarding error: ${error}`);
+                return;
+              }
               if (error instanceof BridgeError) {
                 this.logger?.error(
                   `CoronadoBridge - handler error ${error.status} - ${error.message}`

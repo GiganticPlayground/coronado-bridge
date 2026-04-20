@@ -12,8 +12,6 @@ import CoronadoBridge, {
 } from '../../src/index';
 import log4jsLogger from '../helpers/Log4js-Logger';
 import tsLogger from '../helpers/ts-Logger';
-import Simple from 'simple-mock';
-
 chai.use(chaiHttp);
 
 // TEST CONSTANTS
@@ -41,8 +39,13 @@ const TEST_PORT_4 = 3003;
  */
 
 describe('HTTP Bridge', function () {
+  let originalExpressJson: typeof express.json | null = null;
+
   afterEach(() => {
-    Simple.restore();
+    if (originalExpressJson) {
+      express.json = originalExpressJson;
+      originalExpressJson = null;
+    }
   });
   it('Initializes with log4js', (done: () => void) => {
     const config = {
@@ -65,9 +68,11 @@ describe('HTTP Bridge', function () {
       outboundProvider: new TestProvider(providerConfig),
       jsonParsingOptions
     };
-    const spy = Simple.mock(express, 'json');
+    let capturedArgs: any[] = [];
+    originalExpressJson = express.json;
+    (express as any).json = (...args: any[]) => { capturedArgs = args; return originalExpressJson!(...args); };
     const bridge = new CoronadoBridge(config);
-    expect(spy.lastCall?.args?.[0]).to.equal(jsonParsingOptions);
+    expect(capturedArgs[0]).to.equal(jsonParsingOptions);
     //cleanup
     bridge.close();
     done();
@@ -203,6 +208,42 @@ describe('HTTP Bridge', function () {
       expect(res).to.have.status(408);
     } finally {
       // Cleanup
+      bridge.close();
+    }
+  });
+
+  it('Does not produce an unhandled rejection when the provider resolves after a timeout', async () => {
+    const TIMEOUT_MS = 100;
+    // Provider resolves after the timeout has already fired
+    const PROVIDER_DELAY_MS = 250;
+
+    const unhandledRejections: any[] = [];
+    const onUnhandledRejection = (reason: any) => {
+      unhandledRejections.push(reason);
+    };
+    process.on('unhandledRejection', onUnhandledRejection);
+
+    const config = {
+      ports: [TEST_PORT_1],
+      log4jsLogger,
+      outboundProvider: new TestLateResolveProvider(PROVIDER_DELAY_MS),
+      requestTimeoutMs: TIMEOUT_MS,
+    };
+    const bridge = new CoronadoBridge(config);
+
+    try {
+      // The request times out and should return 408
+      const res = await testServerPostApplicationJsonBody(TEST_PORT_1);
+      expect(res).to.have.status(408);
+
+      // Wait for the provider's delayed resolution to settle and any
+      // resulting unhandled rejection to be raised
+      await new Promise((resolve) => setTimeout(resolve, PROVIDER_DELAY_MS + 100));
+
+      // There should be no unhandled rejections from the late-resolving provider
+      expect(unhandledRejections, 'unhandled rejection occurred after timeout').to.have.length(0);
+    } finally {
+      process.removeListener('unhandledRejection', onUnhandledRejection);
       bridge.close();
     }
   });
@@ -533,6 +574,28 @@ describe('HTTP Bridge', function () {
       return new Promise((resolve, reject) => {
         // We just want this to be slow so it never resolves
         // A bridge using this should time out!
+      });
+    }
+  }
+
+  /**
+   * A provider that resolves after a configurable delay with an OutboundResponse
+   * that includes headers. Used to simulate a slow provider that finishes AFTER
+   * the bridge timeout has already fired and sent a 408 response. Returning an
+   * OutboundResponse with headers means the bridge will call res.header() on an
+   * already-sent response, which throws ERR_HTTP_HEADERS_SENT — the real failure
+   * path seen in production.
+   */
+  class TestLateResolveProvider implements IOutboundProvider {
+    private delayMs: number;
+
+    constructor(delayMs: number) {
+      this.delayMs = delayMs;
+    }
+
+    handler(message: object): Promise<OutboundResponse> {
+      return new Promise((resolve) => {
+        setTimeout(() => resolve(new OutboundResponse({ result: 'ok' }, 200, { 'x-custom': 'value' })), this.delayMs);
       });
     }
   }
