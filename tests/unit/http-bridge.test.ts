@@ -1,5 +1,5 @@
 import 'mocha';
-import chai, { expect } from 'chai';
+import { use, expect } from 'chai';
 import chaiHttp, { request as chaiRequest } from 'chai-http';
 import express from 'express';
 
@@ -12,7 +12,7 @@ import CoronadoBridge, {
 } from '../../src/index';
 import log4jsLogger from '../helpers/Log4js-Logger';
 import tsLogger from '../helpers/ts-Logger';
-chai.use(chaiHttp);
+use(chaiHttp);
 
 // TEST CONSTANTS
 
