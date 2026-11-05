@@ -4,6 +4,9 @@
   "description": "Coronado Bridge is a simple general purpose router of all HTTP requests. It will wrap all RESTful calls from external systems and pass those JSON message into a outbound provider.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "engines": {
+    "node": ">=24"
+  },
   "files": [
     "dist/**/*"
   ],
